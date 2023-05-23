@@ -1,0 +1,15 @@
+{% for zone in config_zones %}
+zone "{{ zone.name }}" {
+    type master;
+    file "{{ zone.zone_file }}";
+    allow-transfer { {{ zone.secondary }}; };
+    also-notify { {{ zone.secondary }}; };
+};
+
+zone "{{ zone.reverse_subnet }}.in-addr.arpa." {
+    type master;
+    file "{{ zone.reverse_file }}";
+    allow-transfer { {{ zone.secondary }}; };
+    also-notify { {{ zone.secondary }}; };
+};
+{% endfor %}

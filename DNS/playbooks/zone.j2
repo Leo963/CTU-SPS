@@ -1,0 +1,26 @@
+$ORIGIN {{ zone_name }}
+$TTL    {{ minimum }}
+@       IN      SOA     {{ primary_ns }} {{ contact_email }} (
+                        {{ serial_num }}     ; serial
+                        {{ refresh }}    ; refresh
+                        {{ retry }}      ; retry
+                        {{ expire }}     ; expire
+                        {{ minimum }}    ; minimum TTL
+                        )
+;
+@       IN      NS      {{ primary_ns }}
+        IN      NS      {{ secondary_ns }}
+
+{% for host in zone_hosts %}
+{{ host.name }}  IN  A   {{ host.ip }}
+{% endfor %}
+
+{% for cname in zone_cnames %}
+{{ cname.name }}  IN  CNAME   {{ cname.target }}
+{% endfor %}
+
+{% if zone_mx is defined %}
+{% for mx in zone_mx %}
+{{ mx.name }}  IN  MX   {{ mx.priority }}  {{ mx.target }}
+{% endfor %}
+{% endif %}

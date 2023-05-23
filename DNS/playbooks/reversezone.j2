@@ -1,0 +1,28 @@
+$ORIGIN {{ reverse_zone_name }}
+$TTL {{ minimum }}
+@   IN  SOA {{ primary_ns }} {{ contact_email }} (
+        {{ serial_num }} ; Serial
+        {{ refresh }} ; Refresh
+        {{ retry }} ; Retry
+        {{ expire }} ; Expire
+        {{ minimum }} ) ; Negative Cache TTL
+
+; name servers
+@       IN  NS  {{ primary_ns }}
+@       IN  NS  {{ secondary_ns }}
+
+; PTR Records
+{% for host in zone_hosts %}
+{{ host.ip.split('.')[-1] }}    IN  PTR {% if '@' == host.name %} {{ zone_name }} {% else %} {{ host.name }}.{{ zone_name }} {% endif %} 
+{% endfor %}
+
+; CNAME Records
+{% for cname in zone_cnames %}
+{{ cname.name }}   IN  CNAME  {{ cname.target }}
+{% endfor %}
+{% if zone_mx is defined %}
+; MX Records
+{% for mx in zone_mx %}
+@   IN  MX  {{ mx.priority }}  {{ mx.target }}
+{% endfor %}
+{% endif %}

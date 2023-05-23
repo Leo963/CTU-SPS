@@ -1,0 +1,21 @@
+zone_name: kaufmlu1.fel.
+reverse_zone_name: 0.168.192.in-addr.arpa.
+primary_ns: ns.kaufmlu1.fel.
+secondary_ns: ns.backup.kaufmlu1.fel.
+contact_email: kaufmlu1.fel.cvut.cz.
+serial_num: "{{ ansible_date_time.epoch }}"
+refresh: 3600
+retry: 1800
+expire: 604800
+minimum: 86400
+zone_hosts:
+  - { name: "@", ip: "192.168.0.1" }
+  - { name: ns, ip: "192.168.0.1" }
+  - { name: ns.backup, ip: "192.168.0.2" }
+  - { name: Fukushima, ip: "192.168.0.2" }
+zone_cnames:
+  - { name: www, target: "@" }
+  - { name: Chernobyl, target: "@" }
+zone_mx:
+  - { name: kaufmlu1.fel., priority: 10, target: ns.kaufmlu1.fel. }
+  - { name: kaufmlu1.fel., priority: 100, target: ns.backup.kaufmlu1.fel. }

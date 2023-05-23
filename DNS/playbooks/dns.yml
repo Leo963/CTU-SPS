@@ -1,0 +1,107 @@
+- name: Setup bind
+  hosts: all
+  vars_files:
+      - ./group_vars/vars.yml
+  tasks:
+    - name: Update and upgrade apt
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+        upgrade: dist
+    - name: Install BIND DNS server
+      apt:
+        name: bind9
+        state: present
+- name: Setup primary
+  hosts: Chernobyl
+  become: true
+  vars_files:
+      - ./group_vars/vars.yml
+      - ./group_vars/dns.yml
+  tasks:
+    - name: Create directory
+      file:
+        path: /etc/bind/zones
+        state: directory
+    - name: Create DNS kaufmlu1.fel zone file
+      template:
+        src: zone.j2
+        dest: /etc/bind/zones/kaufmlu1.fel.zone
+    - name: Create DNS kaufmlu1.fel reverse zone file
+      template:
+        src: reversezone.j2
+        dest: /etc/bind/zones/kaufmlu1.fel-reverse.zone
+      # vars:
+      #   zone_name: priv7.fel.
+      #   primary_ns: ns.priv7.fel.
+      #   secondary_ns: ns.priv16.fel.
+      #   contact_email: kaufmlu1.fel.cvut.cz.
+      #   serial: "{{ ansible_date_time.epoch }}"
+      #   refresh: 3600
+      #   retry: 1800
+      #   expire: 604800
+      #   minimum: 86400
+      #   zone_hosts:
+      #     - { name: "@", ip: 192.168.0.1 }
+      #     - { name: ns, ip: 192.168.0.1 }
+      #   zone_cnames:
+      #     - { name: www, target: "@" }
+      #   zone_mx:
+      #     - { name: priv7.fel., priority: 10, target: ns.priv7.fel. }
+      #     - { name: priv7.fel., priority: 100, target: ns.priv16.fel. }
+
+    # - name: Create DNS hokus.priv7 zone file
+    #   template:
+    #     src: zone.j2
+    #     dest: /etc/bind/zones/hokus.priv7.zone
+    #   vars:
+    #     zone: hokus.priv7.fel.
+    #     primary_ns: hokus.priv7.fel.
+    #     secondary_ns: ns.priv16.fel.
+    #     contact_email: kaufmlu1.fel.cvut.cz.
+    #     serial: "{{ ansible_date_time.epoch }}"
+    #     refresh: 3600
+    #     retry: 1800
+    #     expire: 604800
+    #     minimum: 86400
+    #     zone_hosts:
+    #       - { name: "@", ip: 192.168.0.1 }
+    #       - { name: JA, ip: 192.168.0.2 }
+    #       - { name: ON, ip: 192.168.0.3 }
+    #     zone_cnames:
+    #       - { name: ns, target: "@" }
+
+    - name: Config the zones
+      template:
+        src: bind.conf.j2
+        dest: /etc/bind/named.conf.local
+      vars:
+        config_zones:
+          - { name: kaufmlu1.fel., zone_file: /etc/bind/zones/kaufmlu1.fel.zone, secondary: 192.168.0.2, reverse_subnet: 0.168.192, reverse_file: /etc/bind/zones/kaufmlu1.fel-reverse.zone }
+    - name: Start dns
+      service:
+        name: bind9
+        state: restarted
+
+- name: Setup secondary
+  hosts: Fukushima
+  become: true
+  vars_files:
+      - ./group_vars/vars.yml
+  tasks:
+    - name: Create directory
+      file:
+        path: /etc/bind/zones
+        state: directory
+    - name: Config the zones
+      template:
+        src: bind.conf-sec.j2
+        dest: /etc/bind/named.conf.local
+      vars:
+        config_zones:
+          - { name: kaufmlu1.fel., zone_file: /etc/bind/zones/kaufmlu1.fel.zone, master: 192.168.0.1 }
+          - { name: 0.168.192.in-addr.arpa., zone_file: /etc/bind/zones/kaufmlu1.fel-reverse.zone, master: 192.168.0.1 }
+    - name: Start dns
+      service:
+        name: bind9
+        state: restarted
